@@ -2,11 +2,6 @@ from virustotal_python import Virustotal
 from pprint import pprint
 import time
 import json
-import urllib.request
-import urllib.parse
-import hashlib
-import re
-import os
 
 with open("vt_api.txt", "r") as f:
     api_key = f.readlines()
@@ -39,31 +34,41 @@ def vt_scan_report(urls_list):
 
     for i in range(0, len(urls_list)):
         if urls_list[i] not in already_scanned_urls:
-            print("\nScanning: " + urls_list[i])
+            result = ""
+            print("\nScanning... \n" + urls_list[i] + " is...")
+
             vtotal.url_scan(
                 [urls_list[i]]
             )
 
-            countdown(3)
-            print("\nPrinting Report:\n")
+            countdown(16)
+
             result = vtotal.url_report(
                 [urls_list[i]]
             )
 
+            print("getting report...")
+            countdown(16)
+
+            # get JSON data from VT report
+            try:
+                data = json.dumps(result)
+                json_result = json.loads(data)
+                json_result = json_result['json_resp']
+            except TypeError:
+                print("JSON Error")
+                continue
+
+            for p in json_result:
+                if p == 'positives' and json_result[p] > 0:
+                    print("\nLikely a phish!\n" + p + ": " + str(json_result[p]))
+                elif p == 'positives' and json_result[p] == 0:
+                    print("\nUnlikely a phish!\n" + p + ": " + str(json_result[p]))
+                    break
+
             already_scanned_urls.append(urls_list[i])
             scan_limit_four_at_time += 1
-
-            print("\n***********")
-            pprint(result)
-            print("*************\n")
-
-            print("Already Scanned: " + str(already_scanned_urls))
-            print("Scan Limit: " + str(scan_limit_four_at_time))
-
-        if scan_limit_four_at_time > 0 and scan_limit_four_at_time % 4 == 0:
-            print("Taking 1 minute break... using free VirusTotal Api, which limits to 4 per minute..")
-            countdown(61)
-            continue
+            print("\nYou have scanned " + str(scan_limit_four_at_time) + " URLs.")
 
 
 def countdown(t):
