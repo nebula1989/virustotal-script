@@ -11,7 +11,7 @@ vtotal = Virustotal(api_key)  # virustotal API key
 def main():
     print("Welcome. Enter 1 or more URLS:")
     urls = get_urls()
-    vt_scan_report(urls)
+    vt_get_report(urls)
 
 
 def get_urls():
@@ -25,50 +25,54 @@ def get_urls():
     return lines
 
 
-def vt_scan_report(urls_list):
-    # THINK OF A WAY TO SCAN ONLY 4 URLS PER MINUTE IN A LIST OF X URLS.
+def vt_get_report(urls):
+    for url in urls:
+        try:
+            report = vtotal.url_report([url])
+            data = json.dumps(report)
+            json_report = json.loads(data)
+            json_report = json_report['json_resp']
+            #pprint(json_report)
 
-    already_scanned_urls = []
+            for item in json_report:
+                if item == 'verbose_msg' and json_report[item] == 'Resource does not exist in the dataset':
+                    vt_scan(url)
 
-    scan_limit_four_at_time = 0
-
-    for i in range(0, len(urls_list)):
-        if urls_list[i] not in already_scanned_urls:
-            result = ""
-            print("\nScanning... \n" + urls_list[i] + " is...")
-
-            vtotal.url_scan(
-                [urls_list[i]]
-            )
-
-            countdown(16)
-
-            result = vtotal.url_report(
-                [urls_list[i]]
-            )
-
-            print("getting report...")
-            countdown(16)
-
-            # get JSON data from VT report
-            try:
-                data = json.dumps(result)
-                json_result = json.loads(data)
-                json_result = json_result['json_resp']
-            except TypeError:
-                print("JSON Error")
-                continue
-
-            for p in json_result:
-                if p == 'positives' and json_result[p] > 0:
-                    print("\nLikely a phish!\n" + p + ": " + str(json_result[p]))
-                elif p == 'positives' and json_result[p] == 0:
-                    print("\nUnlikely a phish!\n" + p + ": " + str(json_result[p]))
+            for p in json_report:
+                if p == 'positives' and json_report[p] > 0:
+                    print("\nLikely a phish!\n" + p + ": " + str(json_report[p]))
+                    break
+                elif p == 'positives' and json_report[p] == 0:
+                    print("\nUnlikely a phish!\n" + p + ": " + str(json_report[p]))
                     break
 
-            already_scanned_urls.append(urls_list[i])
-            scan_limit_four_at_time += 1
-            print("\nYou have scanned " + str(scan_limit_four_at_time) + " URLs.")
+        except TypeError:
+            print("You have exceeded the 4 calls per minute limit from VirusTotal... wait 1 minute")
+            countdown(60)
+            continue
+
+
+def vt_scan(scan_this_url):
+    print("This has never been scanned before... performing scan...")
+    scan_status = vtotal.url_scan([scan_this_url])
+    print("Scanning...")
+
+    pprint(scan_status)
+    countdown(10)
+
+    report = vtotal.url_report([scan_this_url])
+    data = json.dumps(report)
+    json_report = json.loads(data)
+    json_report = json_report['json_resp']
+    #pprint(json_report)
+
+    for p in json_report:
+        if p == 'positives' and json_report[p] > 0:
+            print("\nLikely a phish!\n" + p + ": " + str(json_report[p]))
+            break
+        elif p == 'positives' and json_report[p] == 0:
+            print("\nUnlikely a phish!\n" + p + ": " + str(json_report[p]))
+            break
 
 
 def countdown(t):
