@@ -1,14 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-PACKAGE_DIR = r'C:\Users\benwa\ProgrammingProjects\VirusTotalStuff\env\Lib\site-packages'
 
 setup(
     name='VirusTotalStuff',
-    version='1.0',
-    packages=[PACKAGE_DIR],
-    url='',
+    version='0.0.1',
+    packages=find_packages(),
+    url='https://github.com/nebula1989/virustotal-script',
     license='',
     author='Benjamin Walters',
-    author_email='',
-    description='python script.  uses virustotal api to scan batch of URLs'
+    author_email='benwalterscoding@gmail.com',
+    description='script to scan batch of urls with virustotal api'
 )
