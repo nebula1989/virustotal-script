@@ -1,6 +1,0 @@
-README.md
-setup.py
-VirusTotalStuff.egg-info/PKG-INFO
-VirusTotalStuff.egg-info/SOURCES.txt
-VirusTotalStuff.egg-info/dependency_links.txt
-VirusTotalStuff.egg-info/top_level.txt
