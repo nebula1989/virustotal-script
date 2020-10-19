@@ -2,10 +2,12 @@ from virustotal_python import Virustotal
 import time
 import json
 from pprint import pprint
+import re
 
-# API_KEY = <ENTER YOUR VIRUSTOTAL API KEY>   get one here: https://developers.virustotal.com/reference
+# api_key = <YOUR VIRUSTOTAL API KEY>   get one here: https://developers.virustotal.com/reference
 
-# save your api key in a text file and get the key, or delete this and hard code it above
+# save your api key in a text file named "vt_api.txt".  This snippet of code will read the api key instead of hardcoding it, for security.
+# or delete this and hard code it above
 with open("vt_api.txt", "r") as f:
     api_key = f.readline()
 vtotal = Virustotal(api_key)  # virustotal API key
@@ -13,12 +15,16 @@ vtotal = Virustotal(api_key)  # virustotal API key
 # the urls flagged malicious are saved here
 LIKELY_PHISHES = []
 
+API_LIMIT_SECONDS = 15
+GET_SCAN_REPORT_SECONDS = 5
+
 
 def main():
     print("Welcome. Enter 1 or more URLS.  Press ENTER again after last entry:")
     urls = get_urls()
-    scan_all_urls(urls)
-    print(str(len(LIKELY_PHISHES)) + " out of " + str(len(urls)) + " are phishes.\nHere they are:")
+    decoded_urls = decode_url(urls)
+    scan_all_urls(decoded_urls)
+    print(str(len(LIKELY_PHISHES)) + " out of " + str(len(decoded_urls)) + " are phishes.\nHere they are:")
     display_phishes()
 
 
@@ -28,8 +34,8 @@ def scan_all_urls(urls):
         json_report = vt_get_report(url)
 
         while json_report == "API_LIMIT":
-            print("API LIMIT. WAIT 30 seconds.")
-            countdown(30)
+            print("API LIMIT. WAIT 15 seconds.")
+            countdown(API_LIMIT_SECONDS)
             json_report = vt_get_report(url)
 
         '''Turn this on if you want to see the JSON report in terminal'''
@@ -57,7 +63,7 @@ def vt_get_report(url):  # Function to retrieve a VirusTotal report of urls[url]
         json_report = json.loads(data)
         json_report = json_report['json_resp']
         print("\nGetting Report")
-        countdown(10)
+        countdown(GET_SCAN_REPORT_SECONDS)
 
         return json_report
 
@@ -100,11 +106,23 @@ def vt_scan(url):  # if the ULR has never been scanned before, it is scanned her
     vtotal.url_scan([url])
     print("Scanning...it takes a bit of time to get accurate report.")
 
-    countdown(20)
+    countdown(GET_SCAN_REPORT_SECONDS)
 
     json_report = vt_get_report(url)
 
     return json_report
+
+
+def decode_url(urls):
+    decoded_urls = []
+    for url in urls:
+        if re.search('https://urldefense.com.+', url):
+            pattern = "__(.*?)__"  # this only shows what is inside the double underscores
+            result = re.search(pattern, url).group(1)
+            decoded_urls.append(result)
+        else:
+            return urls
+    return decoded_urls
 
 
 def get_urls():  # function to input a list of URLS
